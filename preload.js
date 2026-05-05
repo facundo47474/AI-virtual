@@ -1,0 +1,20 @@
+const { contextBridge, ipcRenderer } = require("electron");
+contextBridge.exposeInMainWorld("charvis", {
+  iniciar         : ()     => ipcRenderer.send("iniciar"),
+  detener         : ()     => ipcRenderer.send("detener"),
+  enviarAudio     : (data) => ipcRenderer.send("audio", data),
+  interrumpir     : ()     => ipcRenderer.send("interrumpir"),
+  vozTerminada    : ()     => ipcRenderer.send("vozTerminada"),
+  limpiar         : ()     => ipcRenderer.send("limpiar"),
+  cerrar          : ()     => ipcRenderer.send("cerrar"),
+  minimizar       : ()     => ipcRenderer.send("minimizar"),
+  onDetenerVoz    : (cb)   => ipcRenderer.on("detenerVoz", () => cb()),
+  onMicGate       : (cb)   => ipcRenderer.on("micGate",      (_, v) => cb(v)),
+  onEstado        : (cb)   => ipcRenderer.on("estado",         (_, v) => cb(v)),
+  onMensaje       : (cb)   => ipcRenderer.on("mensaje",        (_, v) => cb(v)),
+  onError         : (cb)   => ipcRenderer.on("error",          (_, v) => cb(v)),
+  onLimpiar       : (cb)   => ipcRenderer.on("limpiar",        ()     => cb()),
+  onReproducir    : (cb)   => ipcRenderer.on("reproducir",     (_, v) => cb(v)),
+  onHablar        : (cb)   => ipcRenderer.on("hablar",         (_, v) => cb(v)),
+  onStreamTerminado:(cb)   => ipcRenderer.on("streamTerminado",()     => cb()),
+});

@@ -1,0 +1,28 @@
+# Dependencias
+node_modules/
+
+# Claves (nunca subir)
+.env
+.env.local
+.env.*.local
+
+# Logs y temporales
+*.log
+npm-debug.log*
+charvis_tmp.webm
+charvis_tmp.wav
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Build / Electron
+out/
+dist/
+release/

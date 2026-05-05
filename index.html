@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Charvis</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#0a0a0f;--surface:#12121a;--border:#1e1e2e;--accent:#7c6aff;--accent2:#ff6a9b;--text:#e8e8f0;--muted:#5a5a7a;--user-bg:#1a1a2e;--charvis-bg:#13131f;--success:#4fffb0;--danger:#ff4f6a}
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;overflow:hidden;user-select:none}
+    #titlebar{-webkit-app-region:drag;display:flex;align-items:center;justify-content:space-between;padding:14px 20px 10px;border-bottom:1px solid var(--border)}
+    #titlebar .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;letter-spacing:3px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    #titlebar .controls{-webkit-app-region:no-drag;display:flex;gap:8px}
+    .ctrl-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+    .ctrl-btn:hover{background:var(--border);color:var(--text)}
+    .ctrl-btn.danger:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
+    #status-bar{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)}
+    #orb{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:all .3s;flex-shrink:0}
+    #orb.escuchando{background:var(--success);box-shadow:0 0 8px var(--success);animation:pulso 1.2s infinite}
+    #orb.transcribiendo{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+    #orb.pensando{background:var(--accent2);box-shadow:0 0 8px var(--accent2);animation:pulso .8s infinite}
+    #orb.hablando{background:var(--success);box-shadow:0 0 12px var(--success);animation:pulso .5s infinite}
+    #orb.error{background:var(--danger)}
+    @keyframes pulso{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:.7}}
+    #chat{height:calc(100vh - 210px);overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+    #chat::-webkit-scrollbar{width:4px}
+    #chat::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+    .burbuja{max-width:85%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6;animation:aparecer .25s ease-out}
+    @keyframes aparecer{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .burbuja.usuario{align-self:flex-end;background:var(--user-bg);border:1px solid var(--accent);border-bottom-right-radius:4px}
+    .burbuja.charvis{align-self:flex-start;background:var(--charvis-bg);border:1px solid var(--border);border-bottom-left-radius:4px}
+    .burbuja .label{font-size:9px;letter-spacing:1.5px;margin-bottom:4px;font-family:'Syne',sans-serif;font-weight:700}
+    .burbuja.usuario .label{color:var(--accent);text-align:right}
+    .burbuja.charvis .label{color:var(--accent2)}
+    .burbuja.error-msg{align-self:center;background:#1a0a0f;border:1px solid var(--danger);color:var(--danger);font-size:11px}
+    #wave-container{display:flex;align-items:center;justify-content:center;gap:3px;height:40px;padding:0 20px}
+    .bar{width:3px;border-radius:3px;background:var(--accent);height:4px}
+    .bar.active{animation:onda var(--d,.8s) ease-in-out infinite alternate}
+    @keyframes onda{from{height:4px}to{height:28px}}
+    #controls{padding:12px 20px 16px;display:flex;gap:10px;border-top:1px solid var(--border)}
+    .btn{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s}
+    .btn:hover{background:var(--border);color:var(--text)}
+    .btn.primary{background:linear-gradient(135deg,var(--accent),#5a48ff);border-color:var(--accent);color:#fff}
+    .btn.warn{border-color:var(--accent2);color:var(--accent2)}
+    .btn.warn:hover{background:var(--accent2);color:#fff}
+    #empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;color:var(--muted);font-size:12px}
+    #empty .big{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--border);letter-spacing:4px}
+    #mic-error{display:none;text-align:center;padding:20px;color:var(--danger);font-size:12px}
+  </style>
+</head>
+<body>
+  <div id="titlebar">
+    <span class="logo">CHARVIS</span>
+    <div class="controls">
+      <button class="ctrl-btn" onclick="window.charvis.minimizar()">-</button>
+      <button class="ctrl-btn danger" onclick="window.charvis.cerrar()">x</button>
+    </div>
+  </div>
+  <div id="status-bar"><div id="orb"></div><span id="status-text">Iniciando...</span></div>
+  <div id="chat">
+    <div id="empty"><div class="big">C</div><span>Habla cuando estes listo</span></div>
+    <div id="mic-error">No se pudo acceder al microfono.<br>Permiti el acceso en la configuracion del sistema.</div>
+  </div>
+  <div id="wave-container"></div>
+  <div id="controls">
+    <button class="btn warn" onclick="limpiar()">NUEVA CHARLA</button>
+    <button class="btn" id="btn-toggle" onclick="toggleEscucha()">INICIAR</button>
+  </div>
+<script>
+  // ── Estado UI ────────────────────────────────────────────────
+  let activoUI = false;
+  let estadoMain = "";
+  /** El main manda micGate: solo entonces se puede grabar o enviar (evita auto-eco). */
+  let micPermitido = false;
+  let gateEpoch = 0;
+  let epochAlIniciarGrabacion = 0;
+  let isRecording = false;
+  let silenceTimer = null;
+  let vadInterval = null;
+  let audioCtx = null;
+  let analyser = null;
+  let mediaRecorder = null;
+  let audioChunks = [];
+  const wc = document.getElementById("wave-container");
+  for(let i=0;i<20;i++){const b=document.createElement("div");b.className="bar";b.style.setProperty("--d",(0.4+Math.random()*0.6)+"s");b.style.animationDelay=(Math.random()*0.4)+"s";wc.appendChild(b);}
+  function setWave(on,color){document.querySelectorAll(".bar").forEach(b=>{b.classList.toggle("active",on);b.style.background=color||"var(--accent)"});}
+  const estados={
+    escuchando:{texto:"Tu turno — habla; al callar se envia y Charvis responde.",orb:"escuchando",wave:true,wcolor:"var(--success)"},
+    transcribiendo:{texto:"Tu turno termino — procesando voz...",orb:"transcribiendo",wave:false},
+    pensando:{texto:"Turno de Charvis — preparando respuesta...",orb:"pensando",wave:false},
+    hablando:{texto:"Turno de Charvis — no hable hasta que termine.",orb:"hablando",wave:true,wcolor:"var(--accent2)"},
+    detenido:{texto:"Pausado",orb:"",wave:false},
+    listo:{texto:"Listo — tu turno otra vez.",orb:"escuchando",wave:false},
+    error:{texto:"Error",orb:"error",wave:false},
+  };
+  function aplicarEstado(n){const e=estados[n]||estados.escuchando;document.getElementById("status-text").textContent=e.texto;document.getElementById("orb").className=e.orb||"";setWave(e.wave||false,e.wcolor);}
+  function agregarMensaje(rol,texto){
+    const empty=document.getElementById("empty");if(empty)empty.remove();
+    const chat=document.getElementById("chat");
+    const div=document.createElement("div");div.className="burbuja "+rol;
+    const label=document.createElement("div");label.className="label";label.textContent=rol==="usuario"?"VOS":"CHARVIS";
+    const content=document.createElement("div");content.textContent=texto;
+    div.appendChild(label);div.appendChild(content);chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
+  }
+  function agregarError(texto){const chat=document.getElementById("chat");const div=document.createElement("div");div.className="burbuja error-msg";div.textContent="! "+texto;chat.appendChild(div);chat.scrollTop=chat.scrollHeight;}
+  function toggleEscucha(){
+    const btn=document.getElementById("btn-toggle");
+    if(activoUI){
+      activoUI=false;
+      window.charvis.detener();
+      detenerGrabacion();
+      detenerAudio();
+      window.speechSynthesis.cancel();
+      colaVoz.length=0;hablando=false;streamDone=false;
+      btn.textContent="INICIAR";btn.classList.remove("primary");
+      aplicarEstado("detenido");
+    }else{
+      activoUI=true;
+      window.charvis.iniciar();
+      btn.textContent="DETENER";btn.classList.add("primary");
+      aplicarEstado("escuchando");
+    }
+  }
+  function limpiar(){detenerAudio();window.charvis.limpiar();}
+
+  window.charvis.onMicGate((permitido) => {
+    gateEpoch++;
+    micPermitido = !!permitido;
+    if (!micPermitido && isRecording) detenerGrabacion();
+  });
+
+  // ── Audio playback + TTS (una sola señal vozTerminada al main cuando todo terminó) ──
+  let currentAudio = null;
+  let audioQueue = [];
+  let playingAudio = false;
+  let streamDone = false;
+  const colaVoz = [];
+  let hablando = false;
+
+  function notificarVozTerminadaAlMain() {
+    window.charvis.vozTerminada();
+  }
+
+  /** Hay audio/TTS pendiente o sonando (no confundir con cola vacía justo antes de hablar). */
+  function playbackPendiente() {
+    return playingAudio || audioQueue.length > 0 || hablando || colaVoz.length > 0;
+  }
+
+  /**
+   * El main envía streamTerminado cuando el LLM terminó, pero el TTS puede seguir minutos.
+   * Solo avisamos al main (desbloquea mic / IPC) cuando streamDone y ya no queda nada por reproducir.
+   */
+  function intentarNotificarVozTerminada() {
+    if (!streamDone) return;
+    if (playbackPendiente()) return;
+    streamDone = false;
+    notificarVozTerminadaAlMain();
+  }
+
+  function playNext() {
+    if (playingAudio || audioQueue.length === 0) {
+      intentarNotificarVozTerminada();
+      return;
+    }
+    playingAudio = true;
+    const src = audioQueue.shift();
+    currentAudio = new Audio(src);
+    currentAudio.onended = () => {
+      URL.revokeObjectURL(src);
+      playingAudio = false;
+      currentAudio = null;
+      playNext();
+    };
+    currentAudio.onerror = () => {
+      playingAudio = false;
+      currentAudio = null;
+      playNext();
+    };
+    currentAudio.play().catch(() => { playingAudio = false; playNext(); });
+  }
+
+  function detenerAudio() {
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    audioQueue.forEach(src => URL.revokeObjectURL(src));
+    audioQueue = [];
+    playingAudio = false;
+    streamDone = false;
+  }
+
+  window.charvis.onDetenerVoz(() => {
+    detenerAudio();
+    window.speechSynthesis.cancel();
+    colaVoz.length = 0;
+    hablando = false;
+    streamDone = false;
+  });
+
+  window.charvis.onReproducir((base64) => {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
+    const blob = new Blob([bytes], { type: "audio/mpeg" });
+    audioQueue.push(URL.createObjectURL(blob));
+    playNext();
+  });
+
+  function procesarCola(){
+    if(hablando||colaVoz.length===0){
+      if(!hablando&&colaVoz.length===0) intentarNotificarVozTerminada();
+      return;
+    }
+    hablando=true;
+    const utter=new SpeechSynthesisUtterance(colaVoz.shift());
+    utter.lang="es-AR";utter.rate=1.1;utter.pitch=0.8;
+    utter.onend=()=>{hablando=false;procesarCola();};
+    utter.onerror=()=>{hablando=false;procesarCola();};
+    window.speechSynthesis.speak(utter);
+  }
+  window.charvis.onHablar((f)=>{colaVoz.push(f);procesarCola();});
+  window.charvis.onStreamTerminado(()=>{streamDone=true;procesarCola();playNext();});
+
+  // ── VAD + MediaRecorder ──────────────────────────────────────
+  const VOICE_THRESHOLD  = 0.025;  // RMS para detectar voz
+  /** Silencio continuo despues de que hablaste: se cierra el clip y se envia (luego responde Charvis). */
+  const SILENCE_MS = 2000;
+
+  function salidaAudioActiva() {
+    return playbackPendiente();
+  }
+  function mainProcesando() {
+    return ["transcribiendo","pensando","hablando"].includes(estadoMain);
+  }
+
+  async function iniciarVAD() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      audioCtx = new AudioContext();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      audioCtx.createMediaStreamSource(stream).connect(analyser);
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      // MediaRecorder para capturar audio
+      mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      mediaRecorder.ondataavailable = e => { if(e.data.size > 0) audioChunks.push(e.data); };
+      mediaRecorder.onstop = async () => {
+        if(!activoUI) return;
+        const epochGrabacion = epochAlIniciarGrabacion;
+        if(epochGrabacion !== gateEpoch || !micPermitido) {
+          audioChunks = [];
+          return;
+        }
+        const blob = new Blob(audioChunks, { type: "audio/webm" });
+        audioChunks = [];
+        if(blob.size < 1500) return;
+        const arrayBuffer = await blob.arrayBuffer();
+        if(epochGrabacion !== gateEpoch || !micPermitido) return;
+        window.charvis.enviarAudio(new Uint8Array(arrayBuffer));
+      };
+
+      // Por turnos: sin interrupcion por voz; el main abre el mic solo cuando toca al usuario (micGate).
+      vadInterval = setInterval(() => {
+        if(!activoUI) return;
+        analyser.getByteTimeDomainData(dataArray);
+        const rms = Math.sqrt(dataArray.reduce((s,v) => s + (v-128)**2, 0) / dataArray.length) / 128;
+
+        const ocupadoRemoto = mainProcesando();
+        const charvisSuena = salidaAudioActiva();
+
+        if(ocupadoRemoto || charvisSuena) return;
+        if(!micPermitido) return;
+
+        if(rms > VOICE_THRESHOLD && !isRecording) {
+          comenzarGrabacion();
+        } else if(rms < VOICE_THRESHOLD && isRecording) {
+          if(!silenceTimer) {
+            silenceTimer = setTimeout(() => {
+              detenerGrabacion();
+              silenceTimer = null;
+            }, SILENCE_MS);
+          }
+        } else if(rms > VOICE_THRESHOLD && isRecording && silenceTimer) {
+          clearTimeout(silenceTimer);
+          silenceTimer = null;
+        }
+      }, 100);
+
+      const btn=document.getElementById("btn-toggle");
+      activoUI=true;
+      window.charvis.iniciar();
+      btn.textContent="DETENER";
+      btn.classList.add("primary");
+      aplicarEstado("escuchando");
+      console.log("[VAD] Microfono listo");
+
+    } catch(err) {
+      console.error("[MIC]", err.message);
+      document.getElementById("mic-error").style.display = "block";
+      document.getElementById("empty")?.remove();
+      agregarError("No se pudo acceder al microfono: " + err.message);
+    }
+  }
+
+  function comenzarGrabacion() {
+    if(!micPermitido || !activoUI || isRecording || !mediaRecorder) return;
+    epochAlIniciarGrabacion = gateEpoch;
+    isRecording = true;
+    audioChunks = [];
+    mediaRecorder.start();
+    console.log("[VAD] Grabando...");
+  }
+
+  function detenerGrabacion() {
+    if(!isRecording || !mediaRecorder) return;
+    isRecording = false;
+    if(mediaRecorder.state === "recording") mediaRecorder.stop();
+    console.log("[VAD] Grabacion detenida");
+  }
+
+  // ── IPC listeners ────────────────────────────────────────────
+  window.charvis.onEstado((estado) => {
+    estadoMain = estado;
+    aplicarEstado(estado);
+  });
+  window.charvis.onMensaje(({rol,texto}) => agregarMensaje(rol,texto));
+  window.charvis.onError((msg) => { aplicarEstado("error"); agregarError(msg); });
+  window.charvis.onLimpiar(() => {
+    document.getElementById("chat").innerHTML = '<div id="empty"><div class="big">C</div><span>Habla cuando estes listo</span></div>';
+    aplicarEstado("escuchando");
+  });
+
+  // ── Arranque ─────────────────────────────────────────────────
+  window.addEventListener("DOMContentLoaded", () => iniciarVAD());
+</script>
+</body>
+</html>
