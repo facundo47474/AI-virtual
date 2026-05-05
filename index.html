@@ -3,68 +3,280 @@
 <head>
   <meta charset="UTF-8"/>
   <title>Charvis</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;600;700&family=Syncopate:wght@600;700&display=swap" rel="stylesheet"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    :root{--bg:#0a0a0f;--surface:#12121a;--border:#1e1e2e;--accent:#7c6aff;--accent2:#ff6a9b;--text:#e8e8f0;--muted:#5a5a7a;--user-bg:#1a1a2e;--charvis-bg:#13131f;--success:#4fffb0;--danger:#ff4f6a}
-    html,body{height:100%;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;overflow:hidden;user-select:none}
-    #titlebar{-webkit-app-region:drag;display:flex;align-items:center;justify-content:space-between;padding:14px 20px 10px;border-bottom:1px solid var(--border)}
-    #titlebar .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;letter-spacing:3px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    #titlebar .controls{-webkit-app-region:no-drag;display:flex;gap:8px}
-    .ctrl-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
-    .ctrl-btn:hover{background:var(--border);color:var(--text)}
-    .ctrl-btn.danger:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
-    #status-bar{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)}
-    #orb{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:all .3s;flex-shrink:0}
-    #orb.escuchando{background:var(--success);box-shadow:0 0 8px var(--success);animation:pulso 1.2s infinite}
-    #orb.transcribiendo{background:var(--accent);box-shadow:0 0 8px var(--accent)}
-    #orb.pensando{background:var(--accent2);box-shadow:0 0 8px var(--accent2);animation:pulso .8s infinite}
-    #orb.hablando{background:var(--success);box-shadow:0 0 12px var(--success);animation:pulso .5s infinite}
-    #orb.error{background:var(--danger)}
-    @keyframes pulso{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:.7}}
-    #chat{height:calc(100vh - 210px);overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
-    #chat::-webkit-scrollbar{width:4px}
-    #chat::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
-    .burbuja{max-width:85%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6;animation:aparecer .25s ease-out}
-    @keyframes aparecer{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-    .burbuja.usuario{align-self:flex-end;background:var(--user-bg);border:1px solid var(--accent);border-bottom-right-radius:4px}
-    .burbuja.charvis{align-self:flex-start;background:var(--charvis-bg);border:1px solid var(--border);border-bottom-left-radius:4px}
-    .burbuja .label{font-size:9px;letter-spacing:1.5px;margin-bottom:4px;font-family:'Syne',sans-serif;font-weight:700}
+    :root{
+      --bg-deep:#050508;--bg-mid:#0c0c14;--surface:rgba(18,18,28,.55);--glass:rgba(255,255,255,.04);
+      --border:rgba(124,106,255,.22);--accent:#8b7cff;--accent-glow:rgba(139,124,255,.45);--accent2:#ff5c9d;--accent2-glow:rgba(255,92,157,.4);
+      --cyan:#3ee8ff;--cyan-dim:rgba(62,232,255,.25);--mint:#5dffc4;--mint-dim:rgba(93,255,196,.2);
+      --text:#eef0ff;--muted:rgba(200,205,230,.55);--user-bg:linear-gradient(145deg,rgba(139,124,255,.18),rgba(80,60,180,.12));
+      --charvis-bg:linear-gradient(145deg,rgba(255,92,157,.08),rgba(62,232,255,.06));--danger:#ff5c7a;
+      --radius-bubble:22px;--radius-soft:28px;
+    }
+    html,body{height:100%;color:var(--text);font-family:'Outfit',system-ui,sans-serif;overflow:hidden;user-select:none;-webkit-font-smoothing:antialiased}
+    body{
+      background:var(--bg-deep);
+      position:relative;
+    }
+    body::before{
+      content:"";position:fixed;inset:0;pointer-events:none;
+      background:
+        radial-gradient(ellipse 120% 80% at 50% -20%,rgba(139,124,255,.18),transparent 55%),
+        radial-gradient(ellipse 90% 60% at 100% 50%,rgba(255,92,157,.08),transparent 45%),
+        radial-gradient(ellipse 70% 50% at 0% 80%,rgba(62,232,255,.06),transparent 40%);
+      z-index:0;
+    }
+    body::after{
+      content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;z-index:0;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+      mix-blend-mode:overlay;
+    }
+    .ambient-grid{
+      position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.12;
+      background-image:
+        linear-gradient(rgba(139,124,255,.15) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(139,124,255,.15) 1px,transparent 1px);
+      background-size:48px 48px;
+      mask-image:radial-gradient(ellipse 70% 60% at 50% 40%,black,transparent);
+    }
+    .shell{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;}
+
+    #titlebar{
+      -webkit-app-region:drag;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:16px 22px 12px;
+      border-bottom:1px solid var(--glass);
+      background:linear-gradient(180deg,rgba(12,12,20,.85),transparent);
+      backdrop-filter:blur(12px);
+    }
+    #titlebar .logo{
+      font-family:'Syncopate',sans-serif;font-weight:700;font-size:13px;letter-spacing:.35em;
+      background:linear-gradient(115deg,var(--accent),var(--cyan),var(--accent2));
+      background-size:200% auto;
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      animation:logoShift 8s ease infinite;
+    }
+    @keyframes logoShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+    #titlebar .controls{-webkit-app-region:no-drag;display:flex;gap:10px}
+    .ctrl-btn{
+      width:32px;height:32px;border-radius:50%;
+      border:1px solid var(--border);background:var(--surface);
+      color:var(--muted);font-size:13px;font-weight:300;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      transition:transform .2s,box-shadow .2s,border-color .2s;
+      backdrop-filter:blur(8px);
+    }
+    .ctrl-btn:hover{border-color:var(--accent);color:var(--text);box-shadow:0 0 20px var(--accent-glow)}
+    .ctrl-btn.danger:hover{background:rgba(255,92,122,.15);border-color:var(--danger);color:#fff;box-shadow:0 0 18px rgba(255,92,122,.35)}
+
+    .voice-stage{
+      flex-shrink:0;display:flex;flex-direction:column;align-items:center;
+      padding:8px 20px 4px;gap:10px;
+    }
+    .voice-orbit{
+      position:relative;width:112px;height:112px;display:flex;align-items:center;justify-content:center;
+    }
+    .voice-ring{
+      position:absolute;border-radius:50%;pointer-events:none;border:1px solid transparent;
+    }
+    .voice-ring--outer{
+      inset:-6px;
+      border-color:rgba(139,124,255,.25);
+      animation:ringDrift 6s ease-in-out infinite;
+    }
+    .voice-ring--mid{
+      inset:8px;
+      border-color:rgba(62,232,255,.15);
+      animation:ringDrift 4s ease-in-out infinite reverse;
+    }
+    @keyframes ringDrift{0%,100%{transform:rotate(0deg) scale(1);opacity:.9}50%{transform:rotate(180deg) scale(1.03);opacity:.6}}
+
+    #orb{
+      position:relative;width:56px;height:56px;border-radius:50%;
+      background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.25),rgba(100,80,200,.4) 45%,rgba(20,15,40,.9));
+      box-shadow:
+        0 0 40px rgba(139,124,255,.35),
+        inset 0 0 20px rgba(255,255,255,.08);
+      transition:transform .5s cubic-bezier(.34,1.56,.64,1),box-shadow .4s;
+      z-index:2;
+    }
+    #orb::after{
+      content:"";position:absolute;inset:-3px;border-radius:50%;
+      background:conic-gradient(from 180deg,var(--accent),var(--cyan),var(--accent2),var(--accent));
+      opacity:0;z-index:-1;filter:blur(8px);
+      transition:opacity .4s;
+      animation:spinGlow 4s linear infinite;
+      animation-play-state:paused;
+    }
+    @keyframes spinGlow{to{transform:rotate(360deg)}}
+
+    body[data-voice="escuchando"] #orb,
+    body[data-voice="listo"] #orb{
+      box-shadow:0 0 50px var(--mint-dim),inset 0 0 24px rgba(93,255,196,.15);
+      animation:nucleoBreath 2.4s ease-in-out infinite;
+    }
+    body[data-voice="escuchando"] #orb::after,
+    body[data-voice="listo"] #orb::after{opacity:.35;animation-play-state:running}
+
+    body[data-voice="transcribiendo"] #orb{
+      box-shadow:0 0 45px var(--accent-glow);
+      animation:nucleoSpin 2s linear infinite;
+    }
+    body[data-voice="pensando"] #orb{
+      box-shadow:0 0 48px var(--accent2-glow);
+      animation:nucleoPulse 1.2s ease-in-out infinite;
+    }
+    body[data-voice="hablando"] #orb{
+      transform:scale(1.08);
+      box-shadow:0 0 60px var(--accent2-glow),0 0 100px var(--cyan-dim),inset 0 0 30px rgba(255,92,157,.2);
+      animation:nucleoSpeak .55s ease-in-out infinite;
+    }
+    body[data-voice="hablando"] #orb::after{opacity:.65;animation-play-state:running}
+
+    body[data-voice="error"] #orb{background:radial-gradient(circle,rgba(255,92,122,.5),rgba(60,20,30,.95));box-shadow:0 0 40px rgba(255,92,122,.5)}
+    body[data-voice="idle"] #orb{
+      opacity:.65;
+      box-shadow:0 0 24px rgba(100,100,140,.2);
+      animation:none;
+    }
+    body[data-voice="idle"] #orb::after{opacity:0}
+
+    @keyframes nucleoBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+    @keyframes nucleoPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.12);opacity:.88}}
+    @keyframes nucleoSpeak{0%,100%{transform:scale(1.08)}50%{transform:scale(1.14)}}
+    @keyframes nucleoSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+    body[data-voice="hablando"] .voice-ring--outer{border-color:rgba(255,92,157,.4);animation-duration:2.5s}
+    body[data-voice="hablando"] .voice-ring--mid{border-color:rgba(62,232,255,.35)}
+
+    #status-text{
+      font-size:12px;font-weight:500;letter-spacing:.02em;color:var(--muted);max-width:320px;text-align:center;line-height:1.45;
+    }
+    body[data-voice="hablando"] #status-text{color:rgba(255,180,210,.85);text-shadow:0 0 24px var(--accent2-glow)}
+
+    #chat{
+      flex:1;min-height:0;overflow-y:auto;padding:14px 22px 12px;
+      display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth;
+      mask-image:linear-gradient(180deg,transparent,black 12px,black calc(100% - 12px),transparent);
+    }
+    #chat::-webkit-scrollbar{width:5px}
+    #chat::-webkit-scrollbar-thumb{
+      background:linear-gradient(180deg,var(--accent),var(--accent2));border-radius:99px;opacity:.5;
+    }
+    .burbuja{
+      max-width:88%;padding:14px 18px;font-size:14px;line-height:1.55;font-weight:400;
+      animation:aparecer .4s cubic-bezier(.22,1,.36,1) both;
+      backdrop-filter:blur(10px);
+    }
+    @keyframes aparecer{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+    .burbuja.usuario{
+      align-self:flex-end;
+      background:var(--user-bg);
+      border:1px solid rgba(139,124,255,.35);
+      border-radius:var(--radius-bubble) var(--radius-bubble) 6px var(--radius-bubble);
+      box-shadow:0 8px 32px rgba(139,124,255,.12),inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .burbuja.charvis{
+      align-self:flex-start;
+      background:var(--charvis-bg);
+      border:1px solid rgba(62,232,255,.2);
+      border-radius:var(--radius-bubble) var(--radius-bubble) var(--radius-bubble) 10px;
+      box-shadow:0 8px 28px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    .burbuja .label{
+      font-size:10px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:6px;
+      font-family:'Syncopate',sans-serif;font-weight:600;opacity:.75;
+    }
     .burbuja.usuario .label{color:var(--accent);text-align:right}
-    .burbuja.charvis .label{color:var(--accent2)}
-    .burbuja.error-msg{align-self:center;background:#1a0a0f;border:1px solid var(--danger);color:var(--danger);font-size:11px}
-    #wave-container{display:flex;align-items:center;justify-content:center;gap:3px;height:40px;padding:0 20px}
-    .bar{width:3px;border-radius:3px;background:var(--accent);height:4px}
-    .bar.active{animation:onda var(--d,.8s) ease-in-out infinite alternate}
-    @keyframes onda{from{height:4px}to{height:28px}}
-    #controls{padding:12px 20px 16px;display:flex;gap:10px;border-top:1px solid var(--border)}
-    .btn{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s}
-    .btn:hover{background:var(--border);color:var(--text)}
-    .btn.primary{background:linear-gradient(135deg,var(--accent),#5a48ff);border-color:var(--accent);color:#fff}
-    .btn.warn{border-color:var(--accent2);color:var(--accent2)}
-    .btn.warn:hover{background:var(--accent2);color:#fff}
-    #empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;color:var(--muted);font-size:12px}
-    #empty .big{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--border);letter-spacing:4px}
-    #mic-error{display:none;text-align:center;padding:20px;color:var(--danger);font-size:12px}
+    .burbuja.charvis .label{color:var(--cyan);text-align:left}
+    .burbuja.error-msg{
+      align-self:center;background:rgba(255,60,80,.1);border:1px solid rgba(255,92,122,.45);
+      color:#ffb4c0;font-size:12px;border-radius:var(--radius-soft);padding:12px 18px;
+    }
+
+    #wave-container.wave-strip{
+      display:flex;align-items:flex-end;justify-content:center;gap:4px;height:52px;padding:6px 28px 10px;
+      flex-shrink:0;
+    }
+    .bar{
+      width:4px;border-radius:99px;
+      background:linear-gradient(180deg,var(--cyan),var(--accent));
+      height:5px;opacity:.35;transition:opacity .2s;
+    }
+    .bar.active{
+      opacity:1;
+      background:linear-gradient(180deg,var(--mint),var(--accent),var(--accent2));
+      box-shadow:0 0 12px var(--cyan-dim);
+      animation:onda var(--d,.75s) cubic-bezier(.45,0,.55,1) infinite alternate;
+    }
+    @keyframes onda{from{height:6px;transform:scaleY(.85)}to{height:32px;transform:scaleY(1)}}
+
+    body[data-voice="hablando"] .bar.active{
+      background:linear-gradient(180deg,var(--accent2),var(--accent));
+      box-shadow:0 0 14px var(--accent2-glow);
+    }
+
+    #controls{
+      flex-shrink:0;padding:14px 22px 20px;display:flex;gap:12px;
+      border-top:1px solid var(--glass);
+      background:linear-gradient(0deg,rgba(8,8,14,.9),transparent);
+    }
+    .btn{
+      flex:1;padding:13px 16px;border-radius:999px;
+      border:1px solid var(--border);background:var(--surface);
+      color:var(--muted);font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+      cursor:pointer;transition:all .25s;backdrop-filter:blur(12px);
+    }
+    .btn:hover{border-color:rgba(139,124,255,.5);color:var(--text);box-shadow:0 4px 24px rgba(139,124,255,.15)}
+    .btn.primary{
+      background:linear-gradient(135deg,rgba(139,124,255,.35),rgba(100,70,220,.25));
+      border-color:rgba(139,124,255,.55);color:#fff;
+      box-shadow:0 0 28px rgba(139,124,255,.2),inset 0 1px 0 rgba(255,255,255,.1);
+    }
+    .btn.primary:hover{box-shadow:0 0 36px var(--accent-glow)}
+    .btn.warn{border-color:rgba(255,92,157,.45);color:#ffc8dc}
+    .btn.warn:hover{background:rgba(255,92,157,.15);border-color:var(--accent2);color:#fff;box-shadow:0 0 28px var(--accent2-glow)}
+
+    #empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:14px;color:var(--muted);font-size:13px;font-weight:400}
+    #empty .orb-placeholder{
+      width:72px;height:72px;border-radius:50%;
+      background:radial-gradient(circle at 40% 35%,rgba(255,255,255,.12),rgba(80,60,140,.2));
+      border:1px solid var(--border);box-shadow:0 0 40px rgba(139,124,255,.15);
+      animation:emptyFloat 5s ease-in-out infinite;
+    }
+    @keyframes emptyFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+    #empty .hint{font-size:11px;letter-spacing:.06em;opacity:.75;max-width:220px;text-align:center;line-height:1.5}
+    #mic-error{display:none;text-align:center;padding:20px;color:#ffb4c0;font-size:12px}
   </style>
 </head>
-<body>
-  <div id="titlebar">
+<body data-voice="idle">
+  <div class="ambient-grid" aria-hidden="true"></div>
+  <div class="shell">
+  <header id="titlebar">
     <span class="logo">CHARVIS</span>
     <div class="controls">
-      <button class="ctrl-btn" onclick="window.charvis.minimizar()">-</button>
-      <button class="ctrl-btn danger" onclick="window.charvis.cerrar()">x</button>
+      <button type="button" class="ctrl-btn" onclick="window.charvis.minimizar()" title="Minimizar">−</button>
+      <button type="button" class="ctrl-btn danger" onclick="window.charvis.cerrar()" title="Cerrar">×</button>
     </div>
-  </div>
-  <div id="status-bar"><div id="orb"></div><span id="status-text">Iniciando...</span></div>
+  </header>
+  <section class="voice-stage" aria-live="polite">
+    <div class="voice-orbit">
+      <span class="voice-ring voice-ring--outer" aria-hidden="true"></span>
+      <span class="voice-ring voice-ring--mid" aria-hidden="true"></span>
+      <div id="orb"></div>
+    </div>
+    <p id="status-text">Iniciando...</p>
+  </section>
   <div id="chat">
-    <div id="empty"><div class="big">C</div><span>Habla cuando estes listo</span></div>
+    <div id="empty"><div class="orb-placeholder"></div><span class="hint">Tu interfaz de voz lista.<br>Cuando sea tu turno, habla con claridad.</span></div>
     <div id="mic-error">No se pudo acceder al microfono.<br>Permiti el acceso en la configuracion del sistema.</div>
   </div>
-  <div id="wave-container"></div>
+  <div id="wave-container" class="wave-strip"></div>
   <div id="controls">
     <button class="btn warn" onclick="limpiar()">NUEVA CHARLA</button>
     <button class="btn" id="btn-toggle" onclick="toggleEscucha()">INICIAR</button>
+  </div>
   </div>
 <script>
   // ── Estado UI ────────────────────────────────────────────────
@@ -82,7 +294,7 @@
   let mediaRecorder = null;
   let audioChunks = [];
   const wc = document.getElementById("wave-container");
-  for(let i=0;i<20;i++){const b=document.createElement("div");b.className="bar";b.style.setProperty("--d",(0.4+Math.random()*0.6)+"s");b.style.animationDelay=(Math.random()*0.4)+"s";wc.appendChild(b);}
+  for(let i=0;i<32;i++){const b=document.createElement("div");b.className="bar";b.style.setProperty("--d",(0.35+Math.random()*0.55)+"s");b.style.animationDelay=(Math.random()*0.5)+"s";wc.appendChild(b);}
   function setWave(on,color){document.querySelectorAll(".bar").forEach(b=>{b.classList.toggle("active",on);b.style.background=color||"var(--accent)"});}
   const estados={
     escuchando:{texto:"Tu turno — habla; al callar se envia y Charvis responde.",orb:"escuchando",wave:true,wcolor:"var(--success)"},
@@ -93,7 +305,14 @@
     listo:{texto:"Listo — tu turno otra vez.",orb:"escuchando",wave:false},
     error:{texto:"Error",orb:"error",wave:false},
   };
-  function aplicarEstado(n){const e=estados[n]||estados.escuchando;document.getElementById("status-text").textContent=e.texto;document.getElementById("orb").className=e.orb||"";setWave(e.wave||false,e.wcolor);}
+  function aplicarEstado(n){
+    const e=estados[n]||estados.escuchando;
+    document.getElementById("status-text").textContent=e.texto;
+    document.getElementById("orb").className=e.orb||"";
+    const dv=n==="detenido"?"idle":(n==="listo"?"listo":(n==="error"?"error":(e.orb||"escuchando")));
+    document.body.dataset.voice=dv;
+    setWave(e.wave||false,e.wcolor);
+  }
   function agregarMensaje(rol,texto){
     const empty=document.getElementById("empty");if(empty)empty.remove();
     const chat=document.getElementById("chat");
@@ -326,7 +545,7 @@
   window.charvis.onMensaje(({rol,texto}) => agregarMensaje(rol,texto));
   window.charvis.onError((msg) => { aplicarEstado("error"); agregarError(msg); });
   window.charvis.onLimpiar(() => {
-    document.getElementById("chat").innerHTML = '<div id="empty"><div class="big">C</div><span>Habla cuando estes listo</span></div>';
+    document.getElementById("chat").innerHTML = '<div id="empty"><div class="orb-placeholder"></div><span class="hint">Tu interfaz de voz lista.<br>Cuando sea tu turno, habla con claridad.</span></div>';
     aplicarEstado("escuchando");
   });
 
